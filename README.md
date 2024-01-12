@@ -32,3 +32,11 @@ $$
 
 The interquartile range is a measure of statistical dispersion, representing the range between the first quartile (25th percentile) and the third quartile (75th percentile) of the dataset.
 
+
+### Testing 
+
+To execute the testing script via command line:
+
+``` php StatisticalRequestHandlerTest.php [graph_flag] ```
+
+The [graph_flag] argument is optional and can be either true or false. It determines whether a histogram graph is generated. If not provided, it defaults to false.
