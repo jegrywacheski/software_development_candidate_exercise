@@ -150,7 +150,22 @@ class StatisticalRequestHandler extends Request implements StatisticalRequestHan
      */
     public function getStandardDeviation(string $uri): float
     {
-        
+        if (empty($this->data[$uri] || !array_key_exists($uri, $this->data))) {
+            return 0;
+        }
+
+        $mean = $this->getMeanResponseTime($uri);
+        $sum = 0;
+        $count = 0;
+        foreach ($this->data as $key => $value) {
+            if ($key == $uri) {
+                $count = count($value);
+                foreach ($value as $key => $value) {
+                    $sum += pow($value - $mean, 2);
+                }
+            }
+        }
+        return sqrt($sum / $count);
     }
 
     /**
