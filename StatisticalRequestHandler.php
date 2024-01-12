@@ -170,13 +170,125 @@ class StatisticalRequestHandler extends Request implements StatisticalRequestHan
 
     /**
      * Get the normalized histogram for a given URI
+     * Creates a file named $uri.txt containing the histogram
      * 
      * @param string $uri The URI of the request endpoint
-     * @return array The normalized histogram
+     * @return array The normalized histogram with structure:
+     *         array["frequencies"] The normalized frequencies of the histogram
+     *         array["binEdges"] The bin edges of the histogram
      */
     public function getNormalizedHistogram(string $uri): array
     {
-        
+        if (empty($this->data[$uri] || !array_key_exists($uri, $this->data))) {
+            return [];
+        }
+
+        $minTime = min($this->data[$uri]);
+        $maxTime = max($this->data[$uri]);
+
+        // Calculate the number of bins based on the Freedman-Diaconis rule
+        $iqr = $this->calculateInterquartileRange($this->data[$uri]);
+        $targetBinWidth = 2 * $iqr / pow(count($this->data[$uri]), 1/3);
+        $numBins = min($this->maxBins, 
+                        ceil(($maxTime - $minTime) / $targetBinWidth));
+
+        // Calculate the bin width
+        $binWidth = ($maxTime - $minTime) / $numBins;
+
+        $histogram["frequencies"] = array_fill(0, $numBins, 0);
+        $normalizedHistogram["binEdges"] = array();
+
+        // Calculate the bin edges
+        for ($i = 0; $i < $numBins; $i++) {
+            $normalizedHistogram["binEdges"][$i] = $minTime + $i * $binWidth;
+        }
+        $normalizedHistogram["binEdges"][$numBins] = $maxTime;
+
+        // Calculate the frequencies
+        foreach ($this->data[$uri] as $time) {
+            $binIndex = (int) floor(($time - $minTime) / $binWidth);
+            // Adjust bin index to include the edges
+            $binIndex = min($numBins - 1, $binIndex);
+            $histogram["frequencies"][$binIndex]++;
+        }
+
+        // Normalize the histogram
+        $totalObservations = count($this->data[$uri]);
+        $normalizedHistogram["frequencies"] = array_map(
+            function ($count) use ($totalObservations) {
+                return $count / $totalObservations;
+            },
+            $histogram["frequencies"]
+        );
+
+        $this->outputHistogram($normalizedHistogram);
+        return $normalizedHistogram;
+    }
+
+    /**
+     * Calculate the interquartile range of a given data set
+     * 
+     * @param array $data The data set
+     * @return float The interquartile range
+     */
+    private function calculateInterquartileRange(array $data): float
+    {
+        sort($data);
+        $count = count($data);
+        $lowerQuartile = $this->calculatePercentile($data, 0.25);
+        $upperQuartile = $this->calculatePercentile($data, 0.75);
+        return $upperQuartile - $lowerQuartile;
+    }
+
+    /**
+     * Calculate the percentile of a given data set
+     * 
+     * @param array $data The data set
+     * @param float $percentile The percentile to calculate
+     * @return float The percentile
+     */
+    private function calculatePercentile(array $data, float $percentile): float
+    {
+        $count = count($data);
+        $index = $percentile * ($count - 1);
+        $floor = floor($index);
+        $fraction = $index - $floor;
+
+        if (isset($data[$floor]) && isset($data[$floor + 1])) {
+            return $data[$floor]+ $fraction * ($data[$floor + 1] - $data[$floor]);
+        } else {
+            return $data[$floor];
+        }
+    }
+
+    /**
+     * Output a histogram to a file named histogram.txt
+     * 
+     * @param array $normalizedHistogram The normalized histogram
+     */
+    private function outputHistogram(array $normalizedHistogram): void
+    {
+        $file = fopen('histogram.txt', 'w');
+        $maxFrequency = max($normalizedHistogram['frequencies']) * 100;
+
+        for ($i = $maxFrequency; $i >= 0; $i--) {
+            foreach ($normalizedHistogram['frequencies'] as $value) {
+                $frequency = $value * 100;
+                fwrite(
+                    $file, 
+                    ($frequency >= $i) 
+                    ? '             *   ' 
+                    : '                 ');
+            }
+            fwrite($file, "\n");
+        }
+
+        foreach ($normalizedHistogram['binEdges'] as $binEdge) {
+            fwrite($file, $binEdge . ' ');
+        }
+        fwrite($file, "\n");
+        fclose($file);
+
     }
 }
 
