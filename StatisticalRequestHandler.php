@@ -35,13 +35,14 @@ interface StatisticalRequestHandlerInterface
 
     /**
      * Get the normalized histogram for a given URI
+     * Creates a file named histogram.txt containing the histogram if $graph is true
      *
      * @param string $uri The URI of the request endpoint
      * @return array The normalized histogram with structure:
      *         array["frequencies"] The normalized frequencies of the histogram
      *         array["binEdges"] The bin edges of the histogram
      */
-    public function getNormalizedHistogram(string $uri): array;
+    public function getNormalizedHistogram(string $uri, bool $graph): array;
 }
 
 
@@ -107,6 +108,8 @@ class StatisticalRequestHandler extends Request implements StatisticalRequestHan
     /**
      * Stop the timer for response time
      * Store elapsed time in the data dictionary
+     * 
+     * @throws LogicException If start() is not called before calling finish()
      */
     public function finish(): void
     {
@@ -121,6 +124,9 @@ class StatisticalRequestHandler extends Request implements StatisticalRequestHan
 
     /**
      * Get the mean response time for a given URI
+     * 
+     * Time complexity: O(n)
+     * Space complexity: O(1)
      * 
      * @param string $uri The URI of the request endpoint
      * @return float The mean response time in milliseconds
@@ -144,6 +150,9 @@ class StatisticalRequestHandler extends Request implements StatisticalRequestHan
 
     /**
      * Get the standard deviation of the response times for a given URI
+     * 
+     * Time complexity: O(n)
+     * Space complexity: O(1)
      * 
      * @param string $uri The URI of the request endpoint
      * @return float The standard deviation in milliseconds
@@ -170,14 +179,17 @@ class StatisticalRequestHandler extends Request implements StatisticalRequestHan
 
     /**
      * Get the normalized histogram for a given URI
-     * Creates a file named $uri.txt containing the histogram
+     * Creates a file named histogram.txt containing the histogram if $graph is true
+     * 
+     * Time complexity: O(n)
+     * Space complexity: O(n)
      * 
      * @param string $uri The URI of the request endpoint
      * @return array The normalized histogram with structure:
      *         array["frequencies"] The normalized frequencies of the histogram
      *         array["binEdges"] The bin edges of the histogram
      */
-    public function getNormalizedHistogram(string $uri): array
+    public function getNormalizedHistogram(string $uri, bool $graph): array
     {
         if (empty($this->data[$uri] || !array_key_exists($uri, $this->data))) {
             return [];
@@ -221,7 +233,9 @@ class StatisticalRequestHandler extends Request implements StatisticalRequestHan
             $histogram["frequencies"]
         );
 
-        $this->outputHistogram($normalizedHistogram);
+        if ($graph) {
+            $this->outputHistogram($normalizedHistogram);
+        }
         return $normalizedHistogram;
     }
 
