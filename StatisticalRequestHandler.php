@@ -113,7 +113,7 @@ class StatisticalRequestHandler extends Request implements StatisticalRequestHan
      */
     public function finish(): void
     {
-        if (!isset($this->time) || !isset($this->data[$uri])) {
+        if (!isset($this->time)) {
             throw new LogicException("Call start method before calling finish.");
         }
 
@@ -133,7 +133,7 @@ class StatisticalRequestHandler extends Request implements StatisticalRequestHan
      */
     public function getMeanResponseTime(string $uri): float
     {
-        if (empty($this->data[$uri] || !array_key_exists($uri, $this->data))) {
+        if (empty($this->data[$uri]) || !array_key_exists($uri, $this->data)) {
             return 0;
         }
 
@@ -159,7 +159,7 @@ class StatisticalRequestHandler extends Request implements StatisticalRequestHan
      */
     public function getStandardDeviation(string $uri): float
     {
-        if (empty($this->data[$uri] || !array_key_exists($uri, $this->data))) {
+        if (empty($this->data[$uri]) || !array_key_exists($uri, $this->data)) {
             return 0;
         }
 
@@ -191,7 +191,7 @@ class StatisticalRequestHandler extends Request implements StatisticalRequestHan
      */
     public function getNormalizedHistogram(string $uri, bool $graph): array
     {
-        if (empty($this->data[$uri] || !array_key_exists($uri, $this->data))) {
+        if (empty($this->data[$uri]) || !array_key_exists($uri, $this->data)) {
             return [];
         }
 
